@@ -126,6 +126,7 @@ typedef enum event_identifier
   EVENT_SET_KERNEL_POWER_FINAL    = 0x000000c0,
   EVENT_WEAK_HASH_POST            = 0x000000d0,
   EVENT_WEAK_HASH_PRE             = 0x000000d1,
+  EVENT_WEAK_HASH_ALL_CRACKED     = 0x000000d2,
   EVENT_WORDLIST_CACHE_GENERATE   = 0x000000e0,
   EVENT_WORDLIST_CACHE_HIT        = 0x000000e1,
 
@@ -159,15 +160,17 @@ typedef enum vendor_id
 
 typedef enum status_rc
 {
-  STATUS_INIT            = 0,
-  STATUS_AUTOTUNE        = 1,
-  STATUS_RUNNING         = 2,
-  STATUS_PAUSED          = 3,
-  STATUS_EXHAUSTED       = 4,
-  STATUS_CRACKED         = 5,
-  STATUS_ABORTED         = 6,
-  STATUS_QUIT            = 7,
-  STATUS_BYPASS          = 8,
+  STATUS_INIT               = 0,
+  STATUS_AUTOTUNE           = 1,
+  STATUS_RUNNING            = 2,
+  STATUS_PAUSED             = 3,
+  STATUS_EXHAUSTED          = 4,
+  STATUS_CRACKED            = 5,
+  STATUS_ABORTED            = 6,
+  STATUS_QUIT               = 7,
+  STATUS_BYPASS             = 8,
+  STATUS_ABORTED_CHECKPOINT = 9,
+  STATUS_ABORTED_RUNTIME    = 10,
 
 } status_rc_t;
 
@@ -372,6 +375,7 @@ typedef enum dgst_size
   DGST_SIZE_4_4  = (4  * sizeof (u32)), // 16
   DGST_SIZE_4_5  = (5  * sizeof (u32)), // 20
   DGST_SIZE_4_6  = (6  * sizeof (u32)), // 24
+  DGST_SIZE_4_7  = (7  * sizeof (u32)), // 28
   DGST_SIZE_4_8  = (8  * sizeof (u32)), // 32
   DGST_SIZE_4_16 = (16 * sizeof (u32)), // 64 !!!
   DGST_SIZE_4_32 = (32 * sizeof (u32)), // 128 !!!
@@ -434,6 +438,8 @@ typedef enum parser_rc
   PARSER_VC_FILE_SIZE        = -16,
   PARSER_SIP_AUTH_DIRECTIVE  = -17,
   PARSER_HASH_FILE           = -18,
+  PARSER_HASH_ENCODING       = -19,
+  PARSER_SALT_ENCODING       = -20,
   PARSER_UNKNOWN_ERROR       = -255
 
 } parser_rc_t;
@@ -862,6 +868,8 @@ typedef struct hc_device_param
   u32     kernel_accel;
   u32     kernel_loops_min;
   u32     kernel_loops_max;
+  u32     kernel_loops_min_sav; // the _sav are required because each -i iteration
+  u32     kernel_loops_max_sav; // needs to recalculate the kernel_loops_min/max based on the current amplifier count
   u32     kernel_accel_min;
   u32     kernel_accel_max;
   u32     kernel_power;
@@ -1701,9 +1709,6 @@ typedef struct status_ctx
 
   time_t  runtime_start;
   time_t  runtime_stop;
-
-  time_t  prepare_start;
-  time_t  prepare_time;
 
   hc_timer_t timer_running;     // timer on current dict
   hc_timer_t timer_paused;      // timer on current dict

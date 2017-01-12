@@ -15,6 +15,7 @@
 #include "thread.h"
 #include "opencl.h"
 #include "hashes.h"
+#include "shared.h"
 
 static int sort_by_tuning_db_alias (const void *v1, const void *v2)
 {
@@ -67,9 +68,9 @@ int tuning_db_init (hashcat_ctx_t *hashcat_ctx)
 
   tuning_db->enabled = true;
 
-  char *tuning_db_file = (char *) hcmalloc (HCBUFSIZ_TINY);
+  char *tuning_db_file;
 
-  snprintf (tuning_db_file, HCBUFSIZ_TINY - 1, "%s/%s", folder_config->shared_dir, TUNING_DB_FILE);
+  hc_asprintf (&tuning_db_file, "%s/%s", folder_config->shared_dir, TUNING_DB_FILE);
 
   FILE *fp = fopen (tuning_db_file, "rb");
 

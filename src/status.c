@@ -27,6 +27,8 @@ static const char ST_0005[] = "Cracked";
 static const char ST_0006[] = "Aborted";
 static const char ST_0007[] = "Quit";
 static const char ST_0008[] = "Bypass";
+static const char ST_0009[] = "Aborted (Checkpoint)";
+static const char ST_0010[] = "Aborted (Runtime)";
 static const char ST_9999[] = "Unknown! Bug!";
 
 static const char UNITS[7] = { ' ', 'k', 'M', 'G', 'T', 'P', 'E' };
@@ -196,15 +198,17 @@ char *status_get_status_string (const hashcat_ctx_t *hashcat_ctx)
 
   switch (devices_status)
   {
-    case STATUS_INIT:      return ((char *) ST_0000);
-    case STATUS_AUTOTUNE:  return ((char *) ST_0001);
-    case STATUS_RUNNING:   return ((char *) ST_0002);
-    case STATUS_PAUSED:    return ((char *) ST_0003);
-    case STATUS_EXHAUSTED: return ((char *) ST_0004);
-    case STATUS_CRACKED:   return ((char *) ST_0005);
-    case STATUS_ABORTED:   return ((char *) ST_0006);
-    case STATUS_QUIT:      return ((char *) ST_0007);
-    case STATUS_BYPASS:    return ((char *) ST_0008);
+    case STATUS_INIT:               return ((char *) ST_0000);
+    case STATUS_AUTOTUNE:           return ((char *) ST_0001);
+    case STATUS_RUNNING:            return ((char *) ST_0002);
+    case STATUS_PAUSED:             return ((char *) ST_0003);
+    case STATUS_EXHAUSTED:          return ((char *) ST_0004);
+    case STATUS_CRACKED:            return ((char *) ST_0005);
+    case STATUS_ABORTED:            return ((char *) ST_0006);
+    case STATUS_QUIT:               return ((char *) ST_0007);
+    case STATUS_BYPASS:             return ((char *) ST_0008);
+    case STATUS_ABORTED_CHECKPOINT: return ((char *) ST_0009);
+    case STATUS_ABORTED_RUNTIME:    return ((char *) ST_0010);
   }
 
   return ((char *) ST_9999);
@@ -723,8 +727,8 @@ char *status_get_input_candidates_dev (const hashcat_ctx_t *hashcat_ctx, const i
   plain_t plain1 = { 0, 0, 0, outerloop_first, innerloop_first };
   plain_t plain2 = { 0, 0, 0, outerloop_last,  innerloop_last  };
 
-  u32 plain_buf1[16] = { 0 };
-  u32 plain_buf2[16] = { 0 };
+  u32 plain_buf1[40] = { 0 };
+  u32 plain_buf2[40] = { 0 };
 
   u8 *plain_ptr1 = (u8 *) plain_buf1;
   u8 *plain_ptr2 = (u8 *) plain_buf2;
@@ -1592,7 +1596,6 @@ char *status_get_hwmon_dev (const hashcat_ctx_t *hashcat_ctx, const int device_i
   const int num_corespeed   = hm_get_corespeed_with_device_id   ((hashcat_ctx_t *) hashcat_ctx, device_id);
   const int num_memoryspeed = hm_get_memoryspeed_with_device_id ((hashcat_ctx_t *) hashcat_ctx, device_id);
   const int num_buslanes    = hm_get_buslanes_with_device_id    ((hashcat_ctx_t *) hashcat_ctx, device_id);
-  const int num_throttle    = hm_get_throttle_with_device_id    ((hashcat_ctx_t *) hashcat_ctx, device_id);
 
   int output_len = 0;
 
@@ -1624,11 +1627,6 @@ char *status_get_hwmon_dev (const hashcat_ctx_t *hashcat_ctx, const int device_i
   if (num_buslanes >= 0)
   {
     output_len += snprintf (output_buf + output_len, HCBUFSIZ_TINY - output_len, "Lanes:%d ", num_buslanes);
-  }
-
-  if (num_throttle >= 0)
-  {
-    output_len += snprintf (output_buf + output_len, HCBUFSIZ_TINY - output_len, "*Throttled* ");
   }
 
   if (output_len > 0)

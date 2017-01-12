@@ -10,6 +10,7 @@
 #include "event.h"
 #include "interface.h"
 #include "filehandling.h"
+#include "loopback.h"
 #include "outfile.h"
 #include "potfile.h"
 #include "locking.h"
@@ -97,10 +98,9 @@ int potfile_init (hashcat_ctx_t *hashcat_ctx)
 
   if (user_options->potfile_path == NULL)
   {
-    potfile_ctx->filename = (char *) hcmalloc (HCBUFSIZ_TINY);
     potfile_ctx->fp       = NULL;
 
-    snprintf (potfile_ctx->filename, HCBUFSIZ_TINY - 1, "%s/hashcat.potfile", folder_config->profile_dir);
+    hc_asprintf (&potfile_ctx->filename, "%s/hashcat.potfile", folder_config->profile_dir);
   }
   else
   {
@@ -125,6 +125,26 @@ int potfile_init (hashcat_ctx_t *hashcat_ctx)
   u8 *tmp_buf = (u8 *) hcmalloc (HCBUFSIZ_LARGE);
 
   potfile_ctx->tmp_buf = tmp_buf;
+
+  // old potfile detection
+
+  if (user_options->potfile_path == NULL)
+  {
+    char *potfile_old;
+
+    hc_asprintf (&potfile_old, "%s/hashcat.pot", folder_config->profile_dir);
+
+    hc_stat_t st;
+
+    if (hc_stat (potfile_old, &st) == 0)
+    {
+      event_log_warning (hashcat_ctx, "Old potfile detected: %s", potfile_old);
+      event_log_warning (hashcat_ctx, "New potfile is: %s ", potfile_ctx->filename);
+      event_log_warning (hashcat_ctx, "");
+    }
+
+    hcfree (potfile_old);
+  }
 
   return 0;
 }
@@ -263,9 +283,10 @@ void potfile_write_append (hashcat_ctx_t *hashcat_ctx, const char *out_buf, u8 *
 
 int potfile_remove_parse (hashcat_ctx_t *hashcat_ctx)
 {
-  const hashconfig_t  *hashconfig  = hashcat_ctx->hashconfig;
-  const hashes_t      *hashes      = hashcat_ctx->hashes;
-  const potfile_ctx_t *potfile_ctx = hashcat_ctx->potfile_ctx;
+  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
+  const hashes_t       *hashes       = hashcat_ctx->hashes;
+  const loopback_ctx_t *loopback_ctx = hashcat_ctx->loopback_ctx;
+  const potfile_ctx_t  *potfile_ctx  = hashcat_ctx->potfile_ctx;
 
   if (potfile_ctx->enabled == false) return 0;
 
@@ -348,7 +369,8 @@ int potfile_remove_parse (hashcat_ctx_t *hashcat_ctx)
 
     if (line_hash_len == 0) continue;
 
-    if (line_pw_len == 0) continue;
+    // we should allow length 0 passwords (detected by weak hash check)
+    //if (line_pw_len == 0) continue;
 
     if (hashconfig->is_salted)
     {
@@ -466,6 +488,13 @@ int potfile_remove_parse (hashcat_ctx_t *hashcat_ctx)
     found->pw_buf[found->pw_len] = 0;
 
     found->cracked = 1;
+
+    // if enabled, update also the loopback file
+
+    if (loopback_ctx->fp != NULL)
+    {
+      loopback_write_append (hashcat_ctx, (u8 *) pw_buf, (unsigned int) pw_len);
+    }
   }
 
   hcfree (line_buf);

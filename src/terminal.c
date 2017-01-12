@@ -88,21 +88,21 @@ int setup_console ()
 
   if (_setmode (_fileno (stdin), _O_BINARY) == -1)
   {
-    fprintf (stderr, "%s: %s", "stdin", strerror (errno));
+    __mingw_fprintf (stderr, "%s: %m", "stdin");
 
     return -1;
   }
 
   if (_setmode (_fileno (stdout), _O_BINARY) == -1)
   {
-    fprintf (stderr, "%s: %s", "stdin", strerror (errno));
+    __mingw_fprintf (stderr, "%s: %m", "stdin");
 
     return -1;
   }
 
   if (_setmode (_fileno (stderr), _O_BINARY) == -1)
   {
-    fprintf (stderr, "%s: %s", "stdin", strerror (errno));
+    __mingw_fprintf (stderr, "%s: %m", "stdin");
 
     return -1;
   }
@@ -899,7 +899,37 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
 
       break;
 
+    case INPUT_MODE_STRAIGHT_FILE_RULES_FILE:
+
+      event_log_info (hashcat_ctx,
+        "Input.Queue......: %d/%d (%.02f%%)",
+        hashcat_status->input_base_offset,
+        hashcat_status->input_base_count,
+        hashcat_status->input_base_percent);
+
+      break;
+
+    case INPUT_MODE_STRAIGHT_FILE_RULES_GEN:
+
+      event_log_info (hashcat_ctx,
+        "Input.Queue......: %d/%d (%.02f%%)",
+        hashcat_status->input_base_offset,
+        hashcat_status->input_base_count,
+        hashcat_status->input_base_percent);
+
+      break;
+
     case INPUT_MODE_MASK:
+
+      event_log_info (hashcat_ctx,
+        "Input.Queue......: %d/%d (%.02f%%)",
+        hashcat_status->input_base_offset,
+        hashcat_status->input_base_count,
+        hashcat_status->input_base_percent);
+
+      break;
+
+    case INPUT_MODE_MASK_CS:
 
       event_log_info (hashcat_ctx,
         "Input.Queue......: %d/%d (%.02f%%)",
